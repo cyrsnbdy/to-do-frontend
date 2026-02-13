@@ -1,8 +1,8 @@
+import Loading from "@/pages/authentication/components/Loading";
+import Splashscreen from "@/pages/authentication/components/Splashscreen";
+import { Toaster } from "react-hot-toast";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-
 import ChangePassword from "./pages/authentication/ChangePassword";
-import Loading from "./pages/authentication/components/Loading";
-import Splashscreen from "./pages/authentication/components/Splashscreen";
 import ConfirmCode from "./pages/authentication/ConfirmCode";
 import ForgotPassword from "./pages/authentication/ForgotPassword";
 import Login from "./pages/authentication/Login";
@@ -45,7 +45,12 @@ function App() {
     },
   ]);
 
-  return <RouterProvider router={router} />;
+  return (
+    <div>
+      <RouterProvider router={router} />
+      <Toaster position="top-center" />
+    </div>
+  );
 }
 
 export default App;
