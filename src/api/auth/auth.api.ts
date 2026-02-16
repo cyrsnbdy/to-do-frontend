@@ -11,7 +11,7 @@ export const loginApi = async (data: Partial<AccountType>) => {
   return response.data;
 };
 
-export const logoutApi = async (email: string) => {
-  const response = await axiosInstance.post("/auth/logout", { email }); // Send email in body
+export const logoutApi = async () => {
+  const response = await axiosInstance.post("/auth/logout"); // Send email in body
   return response.data;
 };

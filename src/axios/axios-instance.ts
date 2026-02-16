@@ -8,4 +8,15 @@ const axiosInstance = axios.create({
   },
   withCredentials: true,
 });
+
+axiosInstance.interceptors.request.use((config) => {
+  const basicToken = localStorage.getItem("basicToken");
+
+  if (basicToken) {
+    config.headers.Authorization = `Basic ${basicToken}`;
+  }
+
+  return config;
+});
+
 export default axiosInstance;

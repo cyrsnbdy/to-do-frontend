@@ -7,7 +7,7 @@ import { Link, useNavigate } from "react-router-dom";
 import CheckboxComponent from "./components/CheckboxComponent";
 import CustomInput from "./components/CustomInput";
 
-function Login() {
+function Signup() {
   const [accepted, setAccepted] = useState(false);
   const { loading, setRegister } = useAuthStore();
 
@@ -109,7 +109,7 @@ function Login() {
                   type="submit"
                   id="signup"
                   name="signup"
-                  label={loading ? "Creating account..." : "Sign Up"}
+                  label={loading ? "Sign Up" : "Sign Up"}
                   className="mt-5 px-30 py-1.5 w-full"
                   disabled={loading || !accepted}
                 />
@@ -135,4 +135,4 @@ function Login() {
   );
 }
 
-export default Login;
+export default Signup;
