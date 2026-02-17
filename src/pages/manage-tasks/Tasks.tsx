@@ -2,7 +2,7 @@ import Button from "@/components/ButtonComponents";
 import Logo from "@/images/to-do.png";
 import { useAuthStore } from "@/stores/auth/auth.store";
 import { useTaskStore } from "@/stores/tasks/tasks.store";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AddTaskModal } from "./components/AddTaskModal";
 import CheckTasks from "./components/CheckTasks";
@@ -13,14 +13,6 @@ import { ViewTaskModal } from "./components/viewTaskModal";
 function Tasks() {
   const navigate = useNavigate();
   const { setLogout } = useAuthStore();
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-  const [viewTaskText, setViewTaskText] = useState("");
-  const [viewTaskCompleted, setViewTaskCompleted] = useState(false);
-  const openViewModal = (text: string, completed: boolean) => {
-    setViewTaskText(text);
-    setViewTaskCompleted(completed);
-    setIsViewModalOpen(true);
-  };
   const {
     tasks,
     getTasks,
@@ -29,6 +21,10 @@ function Tasks() {
     createTask,
     updateTask,
   } = useTaskStore();
+
+  // Loading states
+  const [loadingTasks, setLoadingTasks] = useState(false);
+  const [, setActionLoading] = useState(false);
 
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -39,6 +35,14 @@ function Tasks() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [selectedTaskText, setSelectedTaskText] = useState<string>("");
+
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [viewTaskText, setViewTaskText] = useState("");
+  const [viewTaskCompleted, setViewTaskCompleted] = useState(false);
+
+  // Search and filter
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filter, setFilter] = useState<"all" | "completed" | "pending">("all");
 
   // Decode basicToken for user email
   const basicToken = localStorage.getItem("basicToken");
@@ -52,9 +56,29 @@ function Tasks() {
     }
   }
 
+  // Load tasks
   useEffect(() => {
-    getTasks();
+    const fetchTasks = async () => {
+      setLoadingTasks(true);
+      await getTasks();
+      setLoadingTasks(false);
+    };
+    fetchTasks();
   }, [getTasks]);
+
+  // Filtered + searched tasks
+  const displayedTasks = useMemo(() => {
+    return tasks.filter((task) => {
+      const matchesSearch = task.task
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
+      const matchesFilter =
+        filter === "all" ||
+        (filter === "completed" && task.completed) ||
+        (filter === "pending" && !task.completed);
+      return matchesSearch && matchesFilter;
+    });
+  }, [tasks, searchQuery, filter]);
 
   // Logout
   const handleLogout = async () => {
@@ -66,24 +90,25 @@ function Tasks() {
     }
   };
 
-  // Add Task
+  // Task handlers
   const handleAddTask = async (taskText: string) => {
+    setActionLoading(true);
     const success = await createTask({ task: taskText });
+    setActionLoading(false);
     if (success) setIsAddModalOpen(false);
   };
 
-  // Open Edit Modal
   const openEditModal = (id: string, text: string) => {
     setEditTaskId(id);
     setEditTaskText(text);
     setIsEditModalOpen(true);
   };
 
-  // Handle Edit Task
   const handleEditTask = async (newText: string) => {
     if (!editTaskId) return;
-
+    setActionLoading(true);
     const success = await updateTask(editTaskId, { task: newText });
+    setActionLoading(false);
     if (success) {
       setIsEditModalOpen(false);
       setEditTaskId(null);
@@ -91,18 +116,17 @@ function Tasks() {
     }
   };
 
-  // Open Delete Modal
   const openDeleteModal = (id: string, text: string) => {
     setSelectedTaskId(id);
     setSelectedTaskText(text);
     setIsDeleteModalOpen(true);
   };
 
-  // Handle Delete Task
   const handleDeleteTask = async () => {
     if (!selectedTaskId) return;
-
+    setActionLoading(true);
     const success = await deleteTask(selectedTaskId);
+    setActionLoading(false);
     if (success) {
       setIsDeleteModalOpen(false);
       setSelectedTaskId(null);
@@ -110,66 +134,116 @@ function Tasks() {
     }
   };
 
+  const openViewModal = (text: string, completed: boolean) => {
+    setViewTaskText(text);
+    setViewTaskCompleted(completed);
+    setIsViewModalOpen(true);
+  };
+
+  // Completion summary
+  const completedCount = tasks.filter((t) => t.completed).length;
+
   return (
     <div className="bg-[#1E319D] w-screen h-screen flex flex-col items-center justify-center">
-      <div className="bg-white absolute inset-3.5 rounded-4xl flex flex-col justify-center items-center">
-        {/* Logo and User Email */}
-        <div className="pt-14 mx-auto flex flex-col justify-center items-center gap-11">
-          <span className="ml-2">
-            <img src={Logo} alt="Logo" className="w-38" />
-          </span>
+      <div className="bg-white absolute inset-1.5 rounded-4xl flex flex-col justify-center items-center my-1">
+        {/* Logo and User */}
+        <div className="flex flex-col mb-8 items-center gap-4">
+          <img src={Logo} alt="Logo" className="w-36" />
           <span>
-            <span>Welcome! </span>
-            <span className="font-bold">{userEmail || "username"}</span>
+            Welcome, <b>{userEmail || "username"}</b>
           </span>
         </div>
 
         {/* Add Task Button */}
-        <div className="mx-auto pt-12">
+        <div className="mt-6">
           <Button
-            label="Add Tasks"
-            className="w-65 h-7"
+            label="Add Task"
+            className="w-52 h-10"
             onClick={() => setIsAddModalOpen(true)}
           />
         </div>
 
-        {/* Add Task Modal */}
+        {/* Search + Filter */}
+        <div className="mt-6 flex flex-col sm:flex-row gap-4 items-center w-full justify-center">
+          <input
+            type="text"
+            placeholder="Search tasks..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="border p-2 rounded w-64"
+          />
+          <div className="flex gap-2">
+            <button
+              className={`px-3 py-1 rounded ${filter === "all" ? "bg-blue-600 text-white" : "bg-gray-200"}`}
+              onClick={() => setFilter("all")}
+            >
+              All
+            </button>
+            <button
+              className={`px-3 py-1 rounded ${filter === "completed" ? "bg-blue-600 text-white" : "bg-gray-200"}`}
+              onClick={() => setFilter("completed")}
+            >
+              Completed
+            </button>
+            <button
+              className={`px-3 py-1 rounded ${filter === "pending" ? "bg-blue-600 text-white" : "bg-gray-200"}`}
+              onClick={() => setFilter("pending")}
+            >
+              Pending
+            </button>
+          </div>
+        </div>
+
+        {/* Completion Summary */}
+        <div className="mt-4 text-gray-600">
+          {tasks.length > 0
+            ? `${completedCount}/${tasks.length} tasks completed`
+            : "No tasks yet"}
+        </div>
+
+        {/* Task List */}
+        <div className="mt-4 overflow-y-auto flex flex-col gap-3 h-80 w-full px-4">
+          {loadingTasks ? (
+            <div className="text-center py-10">Loading tasks...</div>
+          ) : displayedTasks.length === 0 ? (
+            <div className="text-center py-10 text-gray-400">
+              No tasks found
+            </div>
+          ) : (
+            displayedTasks.map((task) => (
+              <CheckTasks
+                key={task._id}
+                taskText={task.task}
+                completed={task.completed}
+                onChange={async () => {
+                  setActionLoading(true);
+                  await toggleTaskStatus(task._id);
+                  await getTasks();
+                  setActionLoading(false);
+                }}
+                onView={() => openViewModal(task.task, task.completed)}
+                onDeleteClick={() => openDeleteModal(task._id, task.task)}
+                onEdit={() => openEditModal(task._id, task.task)}
+              />
+            ))
+          )}
+        </div>
+
+        {/* Modals */}
         <AddTaskModal
           isOpen={isAddModalOpen}
           onClose={() => setIsAddModalOpen(false)}
           onAdd={handleAddTask}
         />
-
-        {/* Task List */}
-        <div className="mt-10 overflow-y-auto flex flex-col gap-3 h-120">
-          {tasks.map((task) => (
-            <CheckTasks
-              key={task._id}
-              taskText={task.task}
-              completed={task.completed}
-              onChange={async () => {
-                await toggleTaskStatus(task._id);
-                await getTasks();
-              }}
-              onView={() => openViewModal(task.task, task.completed)} //  label opens modal
-              onDeleteClick={() => openDeleteModal(task._id, task.task)}
-              onEdit={() => openEditModal(task._id, task.task)}
-            />
-          ))}
-        </div>
-
-        {/* Edit Task Modal */}
         {editTaskId && (
           <EditTaskModal
             isOpen={isEditModalOpen}
             onClose={() => setIsEditModalOpen(false)}
             taskId={editTaskId}
             initialText={editTaskText}
-            onEdit={handleEditTask} //  connected to store
+            onEdit={handleEditTask}
           />
         )}
-
-        {/* Delete Task Modal */}
         {selectedTaskId && (
           <DeleteTaskModal
             isOpen={isDeleteModalOpen}
@@ -179,7 +253,6 @@ function Tasks() {
             onDelete={handleDeleteTask}
           />
         )}
-
         {isViewModalOpen && (
           <ViewTaskModal
             isOpen={isViewModalOpen}
@@ -189,9 +262,9 @@ function Tasks() {
           />
         )}
 
-        {/* Logout Button */}
-        <div className="mx-auto">
-          <Button label="Logout" className="w-65 h-7" onClick={handleLogout} />
+        {/* Logout */}
+        <div className="mt-6">
+          <Button label="Logout" className="w-52 h-10" onClick={handleLogout} />
         </div>
       </div>
     </div>
