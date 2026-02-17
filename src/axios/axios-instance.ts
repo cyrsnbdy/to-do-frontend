@@ -1,22 +1,30 @@
+// axios/axios-instance.ts
 import axios from "axios";
 
 const axiosInstance = axios.create({
-  baseURL: `${import.meta.env.VITE_API_URL}/api`,
-  timeout: 300000,
+  baseURL: "http://localhost:5000/api",
+  timeout: 10000,
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true,
 });
 
-axiosInstance.interceptors.request.use((config) => {
-  const basicToken = localStorage.getItem("basicToken");
+// Add auth interceptor to include the token from localStorage
+axiosInstance.interceptors.request.use(
+  (config) => {
+    // Get the token from localStorage
+    const basicToken = localStorage.getItem("basicToken");
 
-  if (basicToken) {
-    config.headers.Authorization = `Basic ${basicToken}`;
-  }
+    if (basicToken) {
+      // Add the Basic Auth header with the stored token
+      config.headers.Authorization = `Basic ${basicToken}`;
+    }
 
-  return config;
-});
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  },
+);
 
 export default axiosInstance;

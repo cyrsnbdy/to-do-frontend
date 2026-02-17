@@ -2,7 +2,7 @@ import Button from "@/components/ButtonComponents.tsx";
 import TextComponents from "@/components/TextComponents";
 import Logo from "@/images/to-do.png";
 import { useAuthStore } from "@/stores/auth/auth.store";
-import type { AccountType } from "@/types/account/account.type";
+import type { LoginDto } from "@/types/account/account.type";
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import CheckboxComponent from "./components/CheckboxComponent";
@@ -11,7 +11,7 @@ import InputFields from "./components/InputFields";
 function Login() {
   // Lazy initialization from localStorage
   const savedEmail = localStorage.getItem("rememberedEmail") || "";
-  const [form, setForm] = useState<Partial<AccountType>>({
+  const [form, setForm] = useState<Partial<LoginDto>>({
     email: savedEmail,
     password: "",
   });
@@ -46,14 +46,13 @@ function Login() {
 
     if (accepted && form.email) {
       localStorage.setItem("rememberedEmail", form.email);
-      const base64Token = btoa(`${form.email}:${form.password}`);
-      localStorage.setItem("basicToken", base64Token);
     } else {
       localStorage.removeItem("rememberedEmail");
     }
 
     const success = await setLogin(form as { email: string; password: string });
-
+    const base64Token = btoa(`${form.email}:${form.password}`);
+    localStorage.setItem("basicToken", base64Token);
     if (success) {
       navigate("/loading");
     }

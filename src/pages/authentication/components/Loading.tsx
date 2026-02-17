@@ -6,6 +6,17 @@ import { useNavigate } from "react-router-dom";
 function Loading() {
   const navigate = useNavigate();
 
+  const basicToken = localStorage.getItem("basicToken");
+  let userEmail = "";
+  if (basicToken) {
+    try {
+      const decoded = atob(basicToken);
+      userEmail = decoded.split(":")[0];
+    } catch {
+      userEmail = "";
+    }
+  }
+
   useEffect(() => {
     const timer = setTimeout(() => {
       navigate("/tasks");
@@ -22,9 +33,9 @@ function Loading() {
       exit={{ opacity: 0 }}
       transition={{ duration: 1 }}
     >
-      <div className="text-white text-xl">
+      <div className="text-white text-center text-xl">
         <span>Welcome! </span>
-        <span className="font-bold">username</span>
+        <span className="font-bold">{userEmail || "username"}</span>
       </div>
       <div>
         <img src={Logo} alt="Logo" className="w-55 p-4 pb-6" />

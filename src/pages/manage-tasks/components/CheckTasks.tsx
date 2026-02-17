@@ -1,37 +1,40 @@
-import { useState } from "react";
 import { FaTrash } from "react-icons/fa";
 import { FaPencil } from "react-icons/fa6";
 
 interface CheckTasksProps {
-  taskText: string; // text of the task
-  onChange: (checked: boolean) => void; // checkbox change
-  onDelete?: () => void; // optional delete callback
-  onEdit?: () => void; // optional edit callback
+  taskText: string;
+  completed: boolean;
+  onChange: () => void;
+  onDeleteClick?: () => void;
+  onEdit?: () => void;
+  onView?: () => void; // 👈 new prop
 }
 
-function CheckTasks({ taskText, onChange, onDelete, onEdit }: CheckTasksProps) {
-  const [isChecked, setIsChecked] = useState(false);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const checked = e.target.checked;
-    setIsChecked(checked);
-    onChange(checked);
-  };
-
+function CheckTasks({
+  taskText,
+  completed,
+  onChange,
+  onDeleteClick,
+  onEdit,
+  onView,
+}: CheckTasksProps) {
   return (
     <div className="flex items-center gap-2 mx-auto">
-      <input type="checkbox" checked={isChecked} onChange={handleChange} />
+      {/* Checkbox = toggle */}
+      <input type="checkbox" checked={completed} onChange={onChange} />
 
-      <input
-        type="text"
-        value={taskText}
-        readOnly
-        className={`border border-black rounded-3xl w-65 h-11 text-sm text-center overflow-auto p-2 ${
-          isChecked ? "line-through text-gray-400" : ""
+      {/* Label = open modal */}
+      <button
+        type="button"
+        onClick={onView}
+        className={`border border-black rounded-3xl w-65 h-11 text-sm text-center p-2 truncate ${
+          completed ? "line-through text-gray-400" : ""
         }`}
-      />
+      >
+        {taskText}
+      </button>
 
-      <button onClick={onDelete}>
+      <button onClick={onDeleteClick}>
         <FaTrash color="#A60C00" />
       </button>
 
